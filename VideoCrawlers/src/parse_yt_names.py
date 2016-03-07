@@ -19,7 +19,7 @@ YOUTUBE_API_VERSION = "v3"
 
 	
 def add_UC_prefix(channel_name):
-    return "UC{}\n".format(channel_name)
+    return "UC{}".format(channel_name)
 	
 
 def parse_channels_file(youtube_channels_file, dest_file):
@@ -28,12 +28,12 @@ def parse_channels_file(youtube_channels_file, dest_file):
     with open(youtube_channels_file, "r") as csvfile:
         r = reader(csvfile)
         for row in r:
-            youtube_channels.append(row[1])
+            youtube_channels.append(row)
 	youtube_channels.pop(0)
 	
     with open(dest_file, "a") as f:
         for channel in youtube_channels:
-            to_save = add_UC_prefix(channel)
+            to_save = "{}, {}\n".format(channel[0], add_UC_prefix(channel[1]))
             f.write(to_save)
 
 			
@@ -56,7 +56,7 @@ def parse_names_file(youtube_names_file, dest_file):
     with open(youtube_names_file, "r") as csvfile:
         r = reader(csvfile)
         for row in r:
-            youtube_names.append(row[1])
+            youtube_names.append(row)
 	youtube_names.pop(0)
 	
     page_token = ""
@@ -64,12 +64,12 @@ def parse_names_file(youtube_names_file, dest_file):
     with open(dest_file, "a") as f:
         for name in youtube_names:
             for x in xrange(20):
-                j_results = translate_name_to_channel(name, page_token)
+                j_results = translate_name_to_channel(name[1], page_token)
                 items = j_results.get("items", None)
                 if items:
                     for item in items:
-                        ch_id = "{}\n".format(item["id"])
-                        f.write(ch_id)
+                        to_save = "{}, {}\n".format(name[0], item["id"])
+                        f.write(to_save)
                     if "nextPageToken" in j_results:
                         page_token = j_results["nextPageToken"]
                     else:
@@ -80,7 +80,7 @@ def parse_names_file(youtube_names_file, dest_file):
 
 def start_parsing(youtube_names_file, youtube_channels_file, dest_file):
     with open(dest_file, "w") as f:
-        pass
+        f.write("creator, channel\n")
     parse_names_file(youtube_names_file, dest_file)
     parse_channels_file(youtube_channels_file, dest_file)
 	

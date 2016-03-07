@@ -93,7 +93,7 @@ def get_video_meta(youtube_channel_file, dest_file):
     with open(youtube_channel_file, 'r') as csvfile:
         r = reader(csvfile)
         for row in r:
-            channel_id_list.append(row[0])
+            channel_id_list.append(row[1])
     channel_id_list.pop(0)
 
     page_token = ''
