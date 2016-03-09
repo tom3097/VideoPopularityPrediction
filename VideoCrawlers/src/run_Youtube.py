@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from time import strftime
 
 # Fill in Developer Key
-DEVELOPER_KEY = 'AIzaSyAVbJNj-edqMejkOBVmrZQ3aW7AmSnOMts'
+DEVELOPER_KEY = ''
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 

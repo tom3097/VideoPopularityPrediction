@@ -14,9 +14,9 @@ from argparse import ArgumentParser
 
 
 # Fill in Access Token, Client Id, Client Secret
-YOUR_ACCESS_TOKEN = 'c7238d5d9379fd1bf459d454c32ee017'
-YOUR_CLIENT_ID = 'ce75fa1502db7225af8af39df54a1bb075780c99'
-YOUR_CLIENT_SECRET = '+FQhhYI+Exi93mSemN80ztNbve83A3bF0HDXF3COgrbJz20OHXaT/5/ifjGdHgRLmIoSFxciiApkVFbSFyTUeH3x75QFT1y3yfXF8PaTA1FYPtwFwt97YQ1bf5TKd1Bg'
+YOUR_ACCESS_TOKEN = ''
+YOUR_CLIENT_ID = ''
+YOUR_CLIENT_SECRET = ''
 
 
 def read_data_from_csv(id_file):
