@@ -18,8 +18,11 @@ DEVELOPER_KEY = ''
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
+MAX_VIDEOS_PER_FILE = 240000
+MAX_REQUESTS_PER_SAVE = 100
 
-def read_data_from_csv(id_file):
+
+def read_data_from_csv(id_file, log_file):
     nameid_list = []
     try:
         with open(id_file, 'r') as csvfile:
@@ -27,12 +30,15 @@ def read_data_from_csv(id_file):
             for row in r:
                 nameid_list.append(row[1])
         nameid_list.pop(0)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%x %X'), id_file, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     return nameid_list
 
 
-def get_channel_data(id):
+def get_channel_data(id, log_file):
     parameters = {
         'part': 'id,statistics',
         'id': id,
@@ -41,13 +47,16 @@ def get_channel_data(id):
     url = 'https://www.googleapis.com/youtube/v3/channels'
     try:
         page = request(method='get', url=url, params=parameters)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR Request for channel data {} FAILED: {}.\n'.format(strftime('%x %X'), id, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     j_results = loads(page.text)
     return j_results
     
 
-def get_video_ids(page_token, channel_id):
+def get_video_ids(page_token, channel_id, log_file):
     parameters = {
         'part': 'id',
         'maxResults': 50,
@@ -59,13 +68,16 @@ def get_video_ids(page_token, channel_id):
     url = 'https://www.googleapis.com/youtube/v3/search'
     try:
         page = request(method='get', url=url, params=parameters)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR Request for video ids {} page token {} FAILED: {}.\n'.format(strftime('%x %X'), channel_id, page_token, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     j_results = loads(page.text)
     return j_results
 
     
-def get_video_data(video_ids):
+def get_video_data(video_ids, channel_id, log_file):
     parameters = {
         'part': 'id,snippet,statistics',
         'id': ','.join(video_ids),
@@ -75,35 +87,45 @@ def get_video_data(video_ids):
     url = 'https://www.googleapis.com/youtube/v3/videos'
     try:
         page = request(method='get', url=url, params=parameters)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR Request for video data {} FAILED: {}.\n'.format(strftime('%x %X'), channel_id, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     j_results = loads(page.text)
     return j_results
     
 	
-def start_crawling(id_file, log_file, video_file, channel_file):
+def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
     open(log_file, 'w').close()
-    open(video_file, 'w').close()
-    open(channel_file, 'w').close() 
-    nameid_list = read_data_from_csv(id_file)
+    dot_idx = video_file.rfind('.')
+    video_file_name = video_file[:dot_idx]
+    video_file_format = video_file[dot_idx:]
+    video_file_number = initial_number
+    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+    nameid_list = read_data_from_csv(id_file, log_file)
     if nameid_list is None:
-        log = '[{}] File: {} does not exist.\n'.format(strftime('%x %X'), id_file)
-        with open(log_file, 'a') as f:
-            f.write(log)
         return
     youtube_channels = []
     youtube_videos = []
     requests_counter = 0
     for id in nameid_list:
-        channel_response = get_channel_data(id)
+        channel_response = get_channel_data(id, log_file)
         if channel_response is not None:
+            channel_response['channel_UC'] = id
             youtube_channels.append(channel_response)
-            with open(channel_file, 'w') as f:
-                j_str = dumps(youtube_channels, indent=4, sort_keys=True)
-                f.write(j_str)
+            try:
+                with open(channel_file, 'w') as f:
+                    j_str = dumps(youtube_channels, indent=4, sort_keys=True)
+                    f.write(j_str)
+            except Exception as e:
+                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), channel_file, str(e))
+                with open(log_file, 'a') as f:
+                    f.write(log)
+                return
         page_token = ''
         while True:
-            video_ids = get_video_ids(page_token, id)
+            video_ids = get_video_ids(page_token, id, log_file)
             if video_ids is None:
                 break
             if 'items' not in video_ids:
@@ -111,35 +133,65 @@ def start_crawling(id_file, log_file, video_file, channel_file):
             video_ids_list = []
             for ele in video_ids['items']:
                 video_ids_list.append(ele['id']['videoId'])
-            video_response = get_video_data(video_ids_list)
+            log = '[{}] From {} Id response size {}.\n'.format(strftime('%x %X'), id, len(video_ids_list))
+            with open(log_file, 'a') as f:
+                f.write(log)
+            video_response = get_video_data(video_ids_list, id, log_file)
             if video_response is None:
                 break
             if 'items' not in video_response:
                 break
-            log = '[{}] From: {} Responce size: {}.\n'.format(strftime('%x %X'), id, len(video_response['items']))
-            with open(log_file, 'a') as f:
-                f.write(log)
             for ele in video_response['items']:
+                ele['channel_UC'] = id
                 ele['date_time'] = strftime('%x %X')
                 youtube_videos.append(ele)
+            log = '[{}] From {} Responce size {} Videos in list {}.\n'.format(strftime('%x %X'), id, len(video_response['items']), len(youtube_videos))
+            with open(log_file, 'a') as f:
+                f.write(log)
             requests_counter = requests_counter + 1
-            if requests_counter == 20:
+            if requests_counter == MAX_REQUESTS_PER_SAVE:
                 requests_counter = 0
-                with open(video_file, 'w') as f:
-                    j_str = dumps(youtube_videos, indent=4, sort_keys=True)
-                    f.write(j_str)
+                log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+                with open(log_file, 'a') as f:
+                        f.write(log)
+                try:
+                    with open(video_file, 'w') as f:
+                        j_str = dumps(youtube_videos, indent=4, sort_keys=True)
+                        f.write(j_str)
+                except Exception as e:
+                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+                    with open(log_file, 'a') as f:
+                        f.write(log)
+                    return
+                log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+                with open(log_file, 'a') as f:
+                    f.write(log)
+                if len(youtube_videos) >= MAX_VIDEOS_PER_FILE:
+                    log = '[{}] Creating new file.\n'.format(strftime('%x %X'))
+                    with open(log_file, 'a') as f:
+                        f.write(log)
+                    video_file_number = video_file_number + 1
+                    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+                    youtube_videos = []
             if 'nextPageToken' in video_ids:
                 page_token = video_ids['nextPageToken']
             else:
                 break
+    log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+    with open(log_file, 'a') as f:
+        f.write(log)
     with open(video_file, 'w') as f:
         j_str = dumps(youtube_videos, indent=4, sort_keys=True)
-        f.write(j_str) 
-
+        f.write(j_str)
+    log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+    with open(log_file, 'a') as f:
+        f.write(log)
+    
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Youtube videos metadata downloader.')
     parser.add_argument('--filename', help='path to csv file with creators data (csv pattern: creator_name, creator_id_name)', required=True)
+    parser.add_argument('--firstFileNumber', help='number of the FIRST file containing videos, defauly value = 1', default=1, type=int)
     args = parser.parse_args() 
     r_path = path.dirname(path.realpath(__file__))
     results_path = path.join(r_path, '..', 'results')
@@ -148,4 +200,4 @@ if __name__ == '__main__':
         makedirs(results_path)
     if not path.exists(logs_path):
         makedirs(logs_path) 
-    start_crawling(args.filename, path.join(logs_path, 'youtube_logs.log'), path.join(results_path, 'youtube_video.json'), path.join(results_path,'youtube_channels.json'))
+    start_crawling(args.filename, path.join(logs_path, 'youtube_logs.log'), path.join(results_path, 'youtube_video.json'), path.join(results_path,'youtube_channels.json'), args.firstFileNumber)

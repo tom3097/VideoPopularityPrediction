@@ -11,9 +11,13 @@ from csv import reader
 from os import path
 from os import makedirs
 from argparse import ArgumentParser
+
+MAX_VIDEOS_PER_FILE = 750000
+MAX_REQUESTS_PER_SAVE = 100
+MAX_PAGE_NUMBER = 100
 		
 	
-def read_data_from_csv(id_file):
+def read_data_from_csv(id_file, log_file):
     nameid_list = []
     try:
         with open(id_file, 'r') as csvfile:
@@ -21,23 +25,29 @@ def read_data_from_csv(id_file):
             for row in r:
                 nameid_list.append(row[1])
         nameid_list.pop(0)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%x %X'), id_file, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     return nameid_list
 
     
-def get_user_data(dailymot, id):
+def get_user_data(dailymot, id, log_file):
     user_parameters = {
         'fields': 'followers_total,videos_total,videostar.bookmarks_total,views_total',
     }  
     try:
         user_response = dailymot.get('/user/{}'.format(id), user_parameters)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR Request for user data {} FAILED: {}.\n'.format(strftime('%x %X'), id, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     return user_response
     
 
-def get_video_data(dailymot, id, current_page):
+def get_video_data(dailymot, id, current_page, log_file):
     video_fields = {
         'id', 'title', 'thumbnail_url', 'tags', 'owner.id',
         'allow_comments', 'comments_total', 'bookmarks_total',
@@ -54,71 +64,115 @@ def get_video_data(dailymot, id, current_page):
     }
     try:
         video_response = dailymot.get('/user/{}/videos'.format(id), video_parameters)
-    except Exception:
+    except Exception as e:
+        log = '[{}] ERROR Request for video data {} page {} FAILED: {}.\n'.format(strftime('%x %X'), id, current_page, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
         return None
     return video_response
 	
 
-def start_crawling(id_file, log_file, video_file, user_file):
+def start_crawling(id_file, log_file, video_file, user_file, initial_number):
     dailymot = Dailymotion()
     open(log_file, 'w').close()
-    open(video_file, 'w').close()
-    open(user_file, 'w').close() 
-    nameid_list = read_data_from_csv(id_file)
+    dot_idx = video_file.rfind('.')
+    video_file_name = video_file[:dot_idx]
+    video_file_format = video_file[dot_idx:]
+    video_file_number = initial_number
+    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+    nameid_list = read_data_from_csv(id_file, log_file)
     if nameid_list is None:
-        log = '[{}] File: {} does not exist.\n'.format(strftime('%x %X'), id_file)
-        with open(log_file, 'a') as f:
-            f.write(log)
         return
     dailymotion_videos = []
     dailymotion_users = []
     requests_counter = 0
     for id in nameid_list:
-        user_response = get_user_data(dailymot, id)
+        user_response = get_user_data(dailymot, id, log_file)
         if user_response is not None:
             user_response['id'] = id
             dailymotion_users.append(user_response)
-            with open(user_file, 'w') as f:
-                j_str = dumps(dailymotion_users, indent=4, sort_keys=True)
-                f.write(j_str)	        
+            try:
+                with open(user_file, 'w') as f:
+                    j_str = dumps(dailymotion_users, indent=4, sort_keys=True)
+                    f.write(j_str)
+            except Exception as e:
+                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), user_file, str(e))
+                with open(log_file, 'a') as f:
+                    f.write(log)
+                return
         current_page = 1
         while True:
-            video_response = get_video_data(dailymot, id, current_page)
+            video_response = get_video_data(dailymot, id, current_page, log_file)
             if video_response is None:
                 break
             if 'list' not in video_response:
                 break
-            log = '[{}] From: {} Responce size: {}\n'.format(strftime('%x %X'), id, len(video_response['list']))
-            with open(log_file, 'a') as f:
-                f.write(log)
             for ele in video_response['list']:
                 ele['date_time'] = strftime('%x %X')
+                ele['name_id'] = id
                 dailymotion_videos.append(ele) 
+            log = '[{}] From {} Responce size {} Page {} Videos in list {}.\n'.format(strftime('%x %X'), id, len(video_response['list']), current_page, len(dailymotion_videos))
+            with open(log_file, 'a') as f:
+                f.write(log)
             requests_counter = requests_counter + 1
-            if requests_counter == 10:
+            if requests_counter == MAX_REQUESTS_PER_SAVE:
                 requests_counter = 0
-                with open(video_file, 'w') as f:
-                    j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
-                    f.write(j_str)          
+                log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+                with open(log_file, 'a') as f:
+                        f.write(log)
+                try:
+                    with open(video_file, 'w') as f:
+                        j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
+                        f.write(j_str)
+                except Exception as e:
+                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+                    with open(log_file, 'a') as f:
+                        f.write(log)
+                    return
+                log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+                with open(log_file, 'a') as f:
+                    f.write(log)
+                if len(dailymotion_videos) >= MAX_VIDEOS_PER_FILE:
+                    log = '[{}] Creating new file.\n'.format(strftime('%x %X'))
+                    with open(log_file, 'a') as f:
+                        f.write(log)
+                    video_file_number = video_file_number + 1
+                    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+                    dailymotion_videos = []
             current_page = current_page + 1
+            if current_page > MAX_PAGE_NUMBER:
+                break
             has_more = video_response['has_more']
             if has_more == False:
                 break
-    with open(video_file, 'w') as f:
-        j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
-        f.write(j_str)               
+    log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+    with open(log_file, 'a') as f:
+        f.write(log)
+    try:
+        with open(video_file, 'w') as f:
+            j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
+            f.write(j_str)
+    except Exception as e:
+        log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+        with open(log_file, 'a') as f:
+            f.write(log)
+        return
+    log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+    with open(log_file, 'a') as f:
+        f.write(log)
 		
         
 if __name__ == '__main__':
     parser = ArgumentParser(description='Dailymotion videos metadata downloader.')
     parser.add_argument('--filename', help='path to csv file with creators data (csv pattern: creator_name, creator_id_name)', required=True)
+    parser.add_argument('--firstFileNumber', help='number of the FIRST file containing videos, defauly value = 1', default=1, type=int)
     args = parser.parse_args() 
     r_path = path.dirname(path.realpath(__file__))
     results_path = path.join(r_path, '..', 'results')
-    logs_path = path.join(r_path, '..', 'logs')  
+    logs_path = path.join(r_path, '..', 'logs')
     if not path.exists(results_path):
         makedirs(results_path)
     if not path.exists(logs_path):
         makedirs(logs_path) 
-    start_crawling(args.filename, path.join(logs_path, 'dailymotion_logs.log'), path.join(results_path, 'dailymotion_video.json'), path.join(results_path,'dailymotion_users.json'))
+    start_crawling(args.filename, path.join(logs_path, 'dailymotion_logs.log'), path.join(results_path, 'dailymotion_video.json'), path.join(results_path,'dailymotion_users.json'), args.firstFileNumber)
     
