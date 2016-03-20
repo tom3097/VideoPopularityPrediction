@@ -9,10 +9,6 @@ session_start();
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Facebook\Facebook;
-use Facebook\FacebookRequest;
-use Facebook\Exceptions\FacebookResponseException;
-use Facebook\Exceptions\FacebookSDKException;
-
 
 function get_view_count($url, $post_paramtrs = false)
 {
@@ -26,7 +22,7 @@ function get_view_count($url, $post_paramtrs = false)
     }
     curl_setopt($c, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($c, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; rv:33.0) Gecko/20100101 Firefox/33.0");
+    curl_setopt($c, CURLOPT_USERAGENT, "Mozilla/5.0");
     curl_setopt($c, CURLOPT_COOKIE, 'CookieName1=Value;');
     curl_setopt($c, CURLOPT_MAXREDIRS, 10);
     $follow_allowed = ( ini_get('open_basedir') || ini_get('safe_mode')) ? false : true;
@@ -48,7 +44,7 @@ function get_view_count($url, $post_paramtrs = false)
         return -1;
     }
 	
-    $res = preg_match("/>([^>]*)\s((wy..wietle..)|(wy..wietlenia))/", $data, $matches);
+    $res = preg_match("/>([^>]*)\s(Views)/", $data, $matches);
     if($res == 0)
     {
         return -1;
@@ -157,7 +153,7 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
 	'app_secret' => $app_secret,
 	'default_graph_version' => 'v2.5',
     ]);
-    $accessToken = 'CAADM7X5FsYYBAGo7TQCFkqhvgftXZAbAZAkdZCXGf3q9jxlgudu3OD8V48NQwu9Hf54xg7u4dy9dnP9p3tHiKmh4SweKZBDXpGGc8r3N4DmEERNCvvoTZCRVZB22IZCm5oQOwvkmi73eIxzfwrbidt22FI0kxN0OsajgG5VAyZCeSRKBOp0R3U457XaLhZAn2ps3F6jZC623PO5QZDZD';
+    $accessToken = 'CAADM7X5FsYYBAN2ZChPKQhN7wVPIgBnEJ9qAR19TnJICjK0i38HfPLCb5Gd6WMOFK2xIwyXT3bfh1nc28H27PDsiz1QdKvlMr5ZC38TGF5eUZCA2tZBYrYwS9hsbk1w1m1e77OLaqB82sfJRgs4vw3D2fj55Sqt1YUk7qwv72Wqn0UrKXmZC1lSIWP4vNXRUx8H4DMZATxJZA29QEclrb8w';
     $oAuth2Client = $fb->getOAuth2Client();
     $longLivedAccessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
     $fb->setDefaultAccessToken($longLivedAccessToken);
@@ -203,7 +199,7 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
         {
             $log = '[' . date('j-m-y H:i:s') . '] Request for video data page id ' . $page_id . ' FAILED: ' . $e->getMessage() . PHP_EOL;
             file_put_contents($log_file, $log, FILE_APPEND);
-            return null;
+            continue;
         }
         $graph_edge = $video_response->getGraphEdge();
         while (!is_null($graph_edge))
@@ -251,7 +247,7 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
             {
                 $log = '[' . date('j-m-y H:i:s') . '] ERROR Response from page id ' . $page_id . ' FAILED: ' . $e->getMessage() . PHP_EOL;
                 file_put_contents($log_file, $log, FILE_APPEND);
-                return null;
+                break;
             }   
         }
     }
