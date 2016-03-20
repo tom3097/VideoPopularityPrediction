@@ -31,7 +31,7 @@ def read_data_from_csv(id_file, log_file):
                 nameid_list.append(row[1])
         nameid_list.pop(0)
     except Exception as e:
-        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%x %X'), id_file, str(e))
+        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id_file, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -48,7 +48,7 @@ def get_channel_data(id, log_file):
     try:
         page = request(method='get', url=url, params=parameters)
     except Exception as e:
-        log = '[{}] ERROR Request for channel data {} FAILED: {}.\n'.format(strftime('%x %X'), id, str(e))
+        log = '[{}] ERROR Request for channel data {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -69,7 +69,7 @@ def get_video_ids(page_token, channel_id, log_file):
     try:
         page = request(method='get', url=url, params=parameters)
     except Exception as e:
-        log = '[{}] ERROR Request for video ids {} page token {} FAILED: {}.\n'.format(strftime('%x %X'), channel_id, page_token, str(e))
+        log = '[{}] ERROR Request for video ids {} page token {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), channel_id, page_token, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -88,7 +88,7 @@ def get_video_data(video_ids, channel_id, log_file):
     try:
         page = request(method='get', url=url, params=parameters)
     except Exception as e:
-        log = '[{}] ERROR Request for video data {} FAILED: {}.\n'.format(strftime('%x %X'), channel_id, str(e))
+        log = '[{}] ERROR Request for video data {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), channel_id, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -119,7 +119,7 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
                     j_str = dumps(youtube_channels, indent=4, sort_keys=True)
                     f.write(j_str)
             except Exception as e:
-                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), channel_file, str(e))
+                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), channel_file, str(e))
                 with open(log_file, 'a') as f:
                     f.write(log)
                 return
@@ -133,7 +133,7 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
             video_ids_list = []
             for ele in video_ids['items']:
                 video_ids_list.append(ele['id']['videoId'])
-            log = '[{}] From {} Id response size {}.\n'.format(strftime('%x %X'), id, len(video_ids_list))
+            log = '[{}] From {} Id response size {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, len(video_ids_list))
             with open(log_file, 'a') as f:
                 f.write(log)
             video_response = get_video_data(video_ids_list, id, log_file)
@@ -145,13 +145,13 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
                 ele['channel_UC'] = id
                 ele['date_time'] = strftime('%x %X')
                 youtube_videos.append(ele)
-            log = '[{}] From {} Responce size {} Videos in list {}.\n'.format(strftime('%x %X'), id, len(video_response['items']), len(youtube_videos))
+            log = '[{}] From {} Responce size {} Videos in list {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, len(video_response['items']), len(youtube_videos))
             with open(log_file, 'a') as f:
                 f.write(log)
             requests_counter = requests_counter + 1
             if requests_counter == MAX_REQUESTS_PER_SAVE:
                 requests_counter = 0
-                log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+                log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
                 with open(log_file, 'a') as f:
                         f.write(log)
                 try:
@@ -159,15 +159,15 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
                         j_str = dumps(youtube_videos, indent=4, sort_keys=True)
                         f.write(j_str)
                 except Exception as e:
-                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
                     with open(log_file, 'a') as f:
                         f.write(log)
                     return
-                log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+                log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
                 with open(log_file, 'a') as f:
                     f.write(log)
                 if len(youtube_videos) >= MAX_VIDEOS_PER_FILE:
-                    log = '[{}] Creating new file.\n'.format(strftime('%x %X'))
+                    log = '[{}] Creating new file.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
                     with open(log_file, 'a') as f:
                         f.write(log)
                     video_file_number = video_file_number + 1
@@ -177,13 +177,13 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
                 page_token = video_ids['nextPageToken']
             else:
                 break
-    log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+    log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
     with open(log_file, 'a') as f:
         f.write(log)
     with open(video_file, 'w') as f:
         j_str = dumps(youtube_videos, indent=4, sort_keys=True)
         f.write(j_str)
-    log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+    log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
     with open(log_file, 'a') as f:
         f.write(log)
     
