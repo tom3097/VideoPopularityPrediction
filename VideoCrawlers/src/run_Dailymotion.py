@@ -7,6 +7,7 @@
 from json import dumps
 from dailymotion import Dailymotion
 from time import strftime
+from time import localtime
 from csv import reader
 from os import path
 from os import makedirs
@@ -26,7 +27,7 @@ def read_data_from_csv(id_file, log_file):
                 nameid_list.append(row[1])
         nameid_list.pop(0)
     except Exception as e:
-        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%x %X'), id_file, str(e))
+        log = '[{}] ERROR File {} does not exist: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id_file, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -40,7 +41,7 @@ def get_user_data(dailymot, id, log_file):
     try:
         user_response = dailymot.get('/user/{}'.format(id), user_parameters)
     except Exception as e:
-        log = '[{}] ERROR Request for user data {} FAILED: {}.\n'.format(strftime('%x %X'), id, str(e))
+        log = '[{}] ERROR Request for user data {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -61,11 +62,12 @@ def get_video_data(dailymot, id, current_page, log_file):
         'fields': ','.join(video_fields),
         'page': str(current_page),
         'limit': '100',
+        'sort': 'old',
     }
     try:
         video_response = dailymot.get('/user/{}/videos'.format(id), video_parameters)
     except Exception as e:
-        log = '[{}] ERROR Request for video data {} page {} FAILED: {}.\n'.format(strftime('%x %X'), id, current_page, str(e))
+        log = '[{}] ERROR Request for video data {} page {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, current_page, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return None
@@ -96,7 +98,7 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
                     j_str = dumps(dailymotion_users, indent=4, sort_keys=True)
                     f.write(j_str)
             except Exception as e:
-                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), user_file, str(e))
+                log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), user_file, str(e))
                 with open(log_file, 'a') as f:
                     f.write(log)
                 return
@@ -108,10 +110,11 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
             if 'list' not in video_response:
                 break
             for ele in video_response['list']:
-                ele['date_time'] = strftime('%x %X')
+                ele['date_time'] = strftime('%Y-%m-%d %H:%M:%S')
                 ele['name_id'] = id
+                ele['created_time'] = strftime('%Y-%m-%d %H:%M:%S', localtime(ele['created_time'))
                 dailymotion_videos.append(ele) 
-            log = '[{}] From {} Responce size {} Page {} Videos in list {}.\n'.format(strftime('%x %X'), id, len(video_response['list']), current_page, len(dailymotion_videos))
+            log = '[{}] From {} Responce size {} Page {} Videos in list {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, len(video_response['list']), current_page, len(dailymotion_videos))
             with open(log_file, 'a') as f:
                 f.write(log)
             requests_counter = requests_counter + 1
@@ -125,15 +128,15 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
                         j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
                         f.write(j_str)
                 except Exception as e:
-                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+                    log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
                     with open(log_file, 'a') as f:
                         f.write(log)
                     return
-                log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+                log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
                 with open(log_file, 'a') as f:
                     f.write(log)
                 if len(dailymotion_videos) >= MAX_VIDEOS_PER_FILE:
-                    log = '[{}] Creating new file.\n'.format(strftime('%x %X'))
+                    log = '[{}] Creating new file.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
                     with open(log_file, 'a') as f:
                         f.write(log)
                     video_file_number = video_file_number + 1
@@ -145,7 +148,7 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
             has_more = video_response['has_more']
             if has_more == False:
                 break
-    log = '[{}] Saving to file...\n'.format(strftime('%x %X'))
+    log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
     with open(log_file, 'a') as f:
         f.write(log)
     try:
@@ -153,11 +156,11 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
             j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
             f.write(j_str)
     except Exception as e:
-        log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%x %X'), video_file, str(e))
+        log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
         with open(log_file, 'a') as f:
             f.write(log)
         return
-    log = '[{}] Successfully saved.\n'.format(strftime('%x %X'))
+    log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
     with open(log_file, 'a') as f:
         f.write(log)
 		
