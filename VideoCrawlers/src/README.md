@@ -1,7 +1,7 @@
 ##### Youtube videos metadata downloader
 
-usage: run_Dailymotion.py [-h] --filename FILENAME
-                          [--firstFileNumber FIRSTFILENUMBER]
+usage: run_Youtube.py [-h] --filename FILENAME
+                      [--firstFileNumber FIRSTFILENUMBER]
 
 optional arguments:
   -h, --help            show this help message and exit

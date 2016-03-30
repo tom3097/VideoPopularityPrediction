@@ -44,7 +44,7 @@ function get_view_count($url, $post_paramtrs = false)
         return -1;
     }
 	
-    $res = preg_match("/>([^>]*)\s(Views)/", $data, $matches);
+    $res = preg_match("/>([^>]*)\s(Views)</", $data, $matches);
     if($res == 0)
     {
         return -1;
@@ -146,14 +146,14 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
     # Fill in api_id, app_secret and access token
     $MAX_VIDEOS_PER_FILE = 210000;
     $MAX_REQUESTS_PER_SAVE = 20;
-    $api_id = '';
-    $app_secret = '';
+    $api_id = '225320397812102';
+    $app_secret = '823ed61120f4b6b9061a72c2bdc6f6d6';
     $fb = new Facebook([
 	'app_id' => $api_id,
 	'app_secret' => $app_secret,
 	'default_graph_version' => 'v2.5',
     ]);
-    $accessToken = 'CAADM7X5FsYYBAN2ZChPKQhN7wVPIgBnEJ9qAR19TnJICjK0i38HfPLCb5Gd6WMOFK2xIwyXT3bfh1nc28H27PDsiz1QdKvlMr5ZC38TGF5eUZCA2tZBYrYwS9hsbk1w1m1e77OLaqB82sfJRgs4vw3D2fj55Sqt1YUk7qwv72Wqn0UrKXmZC1lSIWP4vNXRUx8H4DMZATxJZA29QEclrb8w';
+    $accessToken = 'CAADM7X5FsYYBAJgcuoCAeG43HK0WbpnZCEFMPv2DZBUuIeeNt2KaDYLzFtLM7ZBqQhxouGSxCsoZCf61Mme3N26oImVvgZBFcrdhd9aNiSwfJbM5IOXC6pZC3zmIVG3uEyZA8DfUzHqrVH3S5l9aQPWvIcQ7QFRnAcHqseShEBhClLgJzZCjZBcAB4qZBMjSXaiOrkVW7QyWJDlgZDZD';
     $oAuth2Client = $fb->getOAuth2Client();
     $longLivedAccessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
     $fb->setDefaultAccessToken($longLivedAccessToken);
@@ -161,8 +161,6 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
     $dot_idx = strrpos($video_file, '.');
     $video_file_name = substr($video_file, 0, $dot_idx);
     $video_file_format = substr($video_file, $dot_idx);
-    $video_file_number = $initial_number;
-    $video_file = $video_file_name . '_' . $video_file_number . $video_file_format;
     $nameid_list = read_data_from_csv($id_file, $log_file);
     if (is_null($nameid_list))
     {
@@ -173,6 +171,8 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
     $requests_counter = 0;
     foreach ($nameid_list as $page_id)
     {
+        $video_file_number = $initial_number;
+        $video_file = $video_file_name . '_' . $page_id . '_' . $video_file_number . $video_file_format;
         $page_response = get_page_data($fb, $page_id, $log_file);
         if (is_null($page_response))
         {
@@ -235,7 +235,7 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
                     $log = '[' . date('j-m-y H:i:s') . '] Creating new file.' . PHP_EOL;
                     file_put_contents($log_file, $log, FILE_APPEND);
                     $video_file_number = $video_file_number + 1;
-                    $video_file = $video_file_name . '_' . $video_file_number . $video_file_format;
+                    $video_file = $video_file_name . '_' . $nameid_list . '_' . $video_file_number . $video_file_format;
                     $facebook_videos = [];
                 }
             }
@@ -250,29 +250,35 @@ function start_crawling($id_file, $log_file, $video_file, $page_file, $initial_n
                 break;
             }   
         }
-    }
-    $log = '[' . date('j-m-y H:i:s') . '] Saving to file...' . PHP_EOL;
-    file_put_contents($log_file, $log, FILE_APPEND);
-    $j_str = json_encode($facebook_videos, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    $res = @file_put_contents($video_file, $j_str);
-    if($res == FALSE)
-    {
-        $log = '[' . date('j-m-y H:i:s') . '] Save or open to file ' . $video_file . ' FAILED: ' . PHP_EOL;
+        $log = '[' . date('j-m-y H:i:s') . '] Saving to file...' . PHP_EOL;
         file_put_contents($log_file, $log, FILE_APPEND);
-        return null;
+        $j_str = json_encode($facebook_videos, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        $res = @file_put_contents($video_file, $j_str);
+        if($res == FALSE)
+        {
+            $log = '[' . date('j-m-y H:i:s') . '] Save or open to file ' . $video_file . ' FAILED: ' . PHP_EOL;
+            file_put_contents($log_file, $log, FILE_APPEND);
+            return null;
+        }
+        $log = '[' . date('j-m-y H:i:s') . '] Successfully saved.' . PHP_EOL;
+        file_put_contents($log_file, $log, FILE_APPEND);
+        $facebook_videos = [];
     }
-    $log = '[' . date('j-m-y H:i:s') . '] Successfully saved.' . PHP_EOL;
-    file_put_contents($log_file, $log, FILE_APPEND);
 }
 
 
 $r_path = dirname(realpath(__FILE__));
 $results_path = $r_path . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'results';
-$logs_path = $r_path . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'logs';
 if (!file_exists($results_path))
 {
     mkdir($results_path, 0777, true);
 }
+$results_path = $results_path . DIRECTORY_SEPARATOR . 'Facebook';
+if (!file_exists($results_path))
+{
+    mkdir($results_path, 0777, true);
+}
+$logs_path = $r_path . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'logs';
 if (!file_exists($logs_path))
 {
     mkdir($logs_path, 0777, true);

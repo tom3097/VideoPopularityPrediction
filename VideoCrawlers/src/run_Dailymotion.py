@@ -62,7 +62,7 @@ def get_video_data(dailymot, id, current_page, log_file):
         'fields': ','.join(video_fields),
         'page': str(current_page),
         'limit': '100',
-        'sort': 'old',
+        'sort': 'recent',
     }
     try:
         video_response = dailymot.get('/user/{}/videos'.format(id), video_parameters)
@@ -80,8 +80,6 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
     dot_idx = video_file.rfind('.')
     video_file_name = video_file[:dot_idx]
     video_file_format = video_file[dot_idx:]
-    video_file_number = initial_number
-    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
     nameid_list = read_data_from_csv(id_file, log_file)
     if nameid_list is None:
         return
@@ -89,6 +87,8 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
     dailymotion_users = []
     requests_counter = 0
     for id in nameid_list:
+        video_file_number = initial_number
+        video_file = '{}_{}_{}{}'.format(video_file_name, id, video_file_number, video_file_format)
         user_response = get_user_data(dailymot, id, log_file)
         if user_response is not None:
             user_response['id'] = id
@@ -112,7 +112,7 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
             for ele in video_response['list']:
                 ele['date_time'] = strftime('%Y-%m-%d %H:%M:%S')
                 ele['name_id'] = id
-                ele['created_time'] = strftime('%Y-%m-%d %H:%M:%S', localtime(ele['created_time'))
+                ele['created_time'] = strftime('%Y-%m-%d %H:%M:%S', localtime(ele['created_time']))
                 dailymotion_videos.append(ele) 
             log = '[{}] From {} Responce size {} Page {} Videos in list {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), id, len(video_response['list']), current_page, len(dailymotion_videos))
             with open(log_file, 'a') as f:
@@ -140,7 +140,7 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
                     with open(log_file, 'a') as f:
                         f.write(log)
                     video_file_number = video_file_number + 1
-                    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+                    video_file = '{}_{}_{}{}'.format(video_file_name, id, video_file_number, video_file_format)
                     dailymotion_videos = []
             current_page = current_page + 1
             if current_page > MAX_PAGE_NUMBER:
@@ -148,21 +148,22 @@ def start_crawling(id_file, log_file, video_file, user_file, initial_number):
             has_more = video_response['has_more']
             if has_more == False:
                 break
-    log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
-    with open(log_file, 'a') as f:
-        f.write(log)
-    try:
-        with open(video_file, 'w') as f:
-            j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
-            f.write(j_str)
-    except Exception as e:
-        log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
+        log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
         with open(log_file, 'a') as f:
             f.write(log)
-        return
-    log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
-    with open(log_file, 'a') as f:
-        f.write(log)
+        try:
+            with open(video_file, 'w') as f:
+                j_str = dumps(dailymotion_videos, indent=4, sort_keys=True)
+                f.write(j_str)
+        except Exception as e:
+            log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
+            with open(log_file, 'a') as f:
+                f.write(log)
+            return
+        log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
+        with open(log_file, 'a') as f:
+            f.write(log)
+        dailymotion_videos = []
 		
         
 if __name__ == '__main__':
@@ -172,9 +173,12 @@ if __name__ == '__main__':
     args = parser.parse_args() 
     r_path = path.dirname(path.realpath(__file__))
     results_path = path.join(r_path, '..', 'results')
-    logs_path = path.join(r_path, '..', 'logs')
     if not path.exists(results_path):
         makedirs(results_path)
+    results_path = path.join(results_path, 'Dailymotion')
+    if not path.exists(results_path):
+        makedirs(results_path)
+    logs_path = path.join(r_path, '..', 'logs')
     if not path.exists(logs_path):
         makedirs(logs_path) 
     start_crawling(args.filename, path.join(logs_path, 'dailymotion_logs.log'), path.join(results_path, 'dailymotion_video.json'), path.join(results_path,'dailymotion_users.json'), args.firstFileNumber)

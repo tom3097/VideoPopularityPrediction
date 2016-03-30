@@ -13,9 +13,9 @@ from os import makedirs
 from argparse import ArgumentParser
 
 # Fill in Access Token, Client Id, Client Secret
-YOUR_ACCESS_TOKEN = ''
-YOUR_CLIENT_ID = ''
-YOUR_CLIENT_SECRET = ''
+YOUR_ACCESS_TOKEN = 'c7238d5d9379fd1bf459d454c32ee017'
+YOUR_CLIENT_ID = 'ce75fa1502db7225af8af39df54a1bb075780c99'
+YOUR_CLIENT_SECRET = '+FQhhYI+Exi93mSemN80ztNbve83A3bF0HDXF3COgrbJz20OHXaT/5/ifjGdHgRLmIoSFxciiApkVFbSFyTUeH3x75QFT1y3yfXF8PaTA1FYPtwFwt97YQ1bf5TKd1Bg'
 
 MAX_VIDEOS_PER_FILE = 130000
 MAX_REQUESTS_PER_SAVE = 200
@@ -71,8 +71,6 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
     dot_idx = video_file.rfind('.')
     video_file_name = video_file[:dot_idx]
     video_file_format = video_file[dot_idx:]
-    video_file_number = initial_number
-    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
     nameid_list = read_data_from_csv(id_file, log_file)
     if nameid_list is None:
         return
@@ -80,6 +78,8 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
     vimeo_videos = []
     requests_counter = 0
     for id in nameid_list:
+        video_file_number = initial_number
+        video_file = '{}_{}_{}{}'.format(video_file_name, id, video_file_number, video_file_format)
         channel_response = get_channel_data(v, id, log_file)
         if channel_response is not None:
             channel_response['name_id'] = id
@@ -138,26 +138,27 @@ def start_crawling(id_file, log_file, video_file, channel_file, initial_number):
                     with open(log_file, 'a') as f:
                         f.write(log)
                     video_file_number = video_file_number + 1
-                    video_file = '{}_{}{}'.format(video_file_name, video_file_number, video_file_format)
+                    video_file = '{}_{}_{}{}'.format(video_file_name, id, video_file_number, video_file_format)
                     vimeo_videos = []
             cmd = video_response['paging']['next']
             if not cmd:
                 break
-    log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
-    with open(log_file, 'a') as f:
-        f.write(log)
-    try:
-        with open(video_file, 'w') as f:
-            j_str = dumps(vimeo_videos, indent=4, sort_keys=True)
-            f.write(j_str)
-    except Exception as e:
-        log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
+        log = '[{}] Saving to file...\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
         with open(log_file, 'a') as f:
             f.write(log)
-        return
-    log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
-    with open(log_file, 'a') as f:
-        f.write(log)
+        try:
+            with open(video_file, 'w') as f:
+                j_str = dumps(vimeo_videos, indent=4, sort_keys=True)
+                f.write(j_str)
+        except Exception as e:
+            log = '[{}] Save or open to file {} FAILED: {}.\n'.format(strftime('%Y-%m-%d %H:%M:%S'), video_file, str(e))
+            with open(log_file, 'a') as f:
+                f.write(log)
+            return
+        log = '[{}] Successfully saved.\n'.format(strftime('%Y-%m-%d %H:%M:%S'))
+        with open(log_file, 'a') as f:
+            f.write(log)
+        vimeo_videos = []
                 
                 
 if __name__ == '__main__':
@@ -167,10 +168,13 @@ if __name__ == '__main__':
     args = parser.parse_args() 
     r_path = path.dirname(path.realpath(__file__))
     results_path = path.join(r_path, '..', 'results')
-    logs_path = path.join(r_path, '..', 'logs')  
     if not path.exists(results_path):
         makedirs(results_path)
+    results_path = path.join(results_path, 'Vimeo')
+    if not path.exists(results_path):
+        makedirs(results_path)
+    logs_path = path.join(r_path, '..', 'logs')
     if not path.exists(logs_path):
-        makedirs(logs_path) 
+        makedirs(logs_path)
     start_crawling(args.filename, path.join(logs_path, 'vimeo_logs.log'), path.join(results_path, 'vimeo_video.json'), path.join(results_path,'vimeo_channels.json'), args.firstFileNumber)
     
