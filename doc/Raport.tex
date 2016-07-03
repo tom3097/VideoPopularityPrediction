@@ -488,6 +488,35 @@ Skrypt użyty do wyznaczenia tych miniaturek można znaleźć tutaj: \url{https:
 Dodatkowo, specjalnie na potrzeby pracy inżynierskiej, nauczyłem się języka R (z którego potem korzystałem na równi z Pythonem). Zapoznałem się również z artykułami które otrzymałem, można je znaleźć tutaj: \url{https://github.com/tom3097/VideoPopularityPrediction/tree/master/Materials/research_papers}.
 
 \section{Plany na następny semestr}
-W następnym semestrze planuję zająć się między innymi implementacją i testowaniem CNN w przypadku filmików (już nie miniaturek). Dodatkowo planuję przeanalizować filmiki z dwóch pozostałych źródeł (w tej chwili kładłem nacisk na filmiki z youtube oraz facebooka, do zbadania zostały jeszcze filmiki z dailyotion oraz vimeo). Następnie planuję uwzględnić w predykcji również inne metadane jak komentarze, lajki itp. Ostatecznie mam również w planach formalne napisanie pracy.
+Poniżej prezentuję plany na następny semestr oraz planowane terminy ich realizacji. Bardzo prawdopodobne, że plany te mogą się troche zmienić (mogą pojawić się nowe pomysły, coś może zostać zrealizowane szybciej / wolniej). Co do czasów zakończenia to są to planowane czasy, ponieważ wiele zależy od otrzymywanych na bieżąco rezultatów.
+
+\subsection{Klasyfikacja filmików za pomocą CNN lub też LRCN}
+W tym punkcie zamierzam zająć się klasyfikacją filmików. Jednym ze sposobów klasyfikacji filmików jest wykorzystanie CNN, tak jak to jest opisane tutaj: \url{https://github.com/tom3097/VideoPopularityPrediction/blob/master/Materials/research_papers/cvpr2014-deepvideo-rahuls.pdf}. Kolejnym sposobem będzie już wykorzystanie innego rodzaju sieci neuronowych: z pamięcią długotrwałą. Sposób ten został opisnay tutaj: \url{https://github.com/tom3097/VideoPopularityPrediction/blob/master/Materials/research_papers/EECS-2014-180.pdf}.
+\\Planowany czas zakończenia: 31.07.2016
+
+\subsection{Analizowanie filmików z innych źródeł}
+Dotychczas analizowałem głównie filmiki z facebooka, w tym kroku zamierzam przeanalizować również filmiki z Youtube, Dailymotion oraz Vimeo. Analiza tych filmików może być trudniejsza niż to było w przypadku facebooka, jednak realizowane będą zadania analogiczne jak to było w przypadku filmików z facebooka.
+\\Planowany czas zakończenia: 31.08.2016
+
+\subsection{Fine-tuning sieci na podstawie filmików ze wszystkich źródeł}
+W tym kroku planuję zająć się trenowaniem sieci, która analizować będzie dane ze wszystkich serwisów. Najprawdopodobniej będzie to fine-tuning, ponieważ wydaje się że wytrenowane wczeniej, w początkowych warstwach cechy powinny działać również dla filmików. Rozpatruję także możliwoć wytrenowania zupełnie nowej sieci, lub tez eksperymentowanie przy fine-tuningu (np fine-tuning 2/3 ostatnich warstw FC).
+\\Planowany czas zakończenia: 30.09.2016
+
+\subsection{Analiza dodatkowych informacji}
+W tym punkcie planuję przeprowadzić analizę innych informacji pozyskanych przy crawlowaniu, takich jak liczba komentarzy, lajki, opisy, tagi itp. Doświadczalnie planuję sprawdzić, które z nich potrafią wnieść istotne informację o popularności filmików. Jeśli chodzi o dokładniejsze informację jak zamierzam to zrobić, to trudno mi w tej chwili cokolwiek powiedzieć. Głębsze zapoznanie się z tematem planuję poczynić gdy będę już realizował ten punkt (na pewno uwzględnie uwagi i propozycje promotora).
+\\Planowany czas zakończenia: 30.10.2016 (? trudno powiedzieć bo jeszcze nie wiem jak to zrobić)
+
+\subsection{Połączenie wszystkiego w całość}
+W tym punkcie planuję połączyć wyniki uzyskane przy trenowaniu sieci na podstawie samych filmików oraz dodatkowych informacji uwzględnionych w punkcie poprzednim.
+\\Planowany czas zakończenia: 30.s11.2016
+
+\subsection{Stworzenie interfejsu}
+Planuję również stworzyć jakis interfejs (najprawdopodobniej będzie to strona internetowa), na której użytkownicy będą mogli ładować swoje filmiki i uzyskiwać informację jak bardzo popularne mogą one być. Możliwe jest także ładowanie większej ilości filmików i wybieranie najlepszego z nich.
+\\Planowany czas zakończenia: 31.12.2016
+
+\subsection{Pisanie pracy inżynierskiej}
+Zamierzam również napisać pracę inżynierską i obronić ją a najbliższym semestrze.
+\\Planowany czas zakończenia: termin oddania prac inżynierskich
+ 
 
 \end{document}
