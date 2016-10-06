@@ -99,8 +99,8 @@ class Crawler {
         $dot_idx = strrpos($video_file, '.');
         $this->video_file_name = substr($video_file, 0, $dot_idx);
         $this->video_file_extension = substr($video_file, $dot_idx);
-        $api_id = '1031749413563503';
-        $app_secret = 'a9054948969e47d553455bf578e62a0b';
+        $api_id = '';
+        $app_secret = '';
         $this->fb = new Facebook\Facebook([
             'app_id' => $api_id,
             'app_secret' => $app_secret,
